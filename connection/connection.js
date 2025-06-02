@@ -8,7 +8,7 @@ export const config = {
     projectId : process.env.APPWRITE_PROJECT_ID,
     secertApiKey : process.env.APPWRITE_SECERT_API_KEY,
     databaseid : process.env.APPWRITE_DATABASE_ID,
-    meal_logs : process.env.APPWRITE_MEAL_LOGS_COLLECTION_ID
+    meal_logs_collectionID : process.env.APPWRITE_MEAL_LOGS_COLLECTION_ID
 }
 
 client
