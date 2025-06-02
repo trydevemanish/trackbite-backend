@@ -1,1 +1,1 @@
-import { databases } from '../connection/connection.js'
+import { databases,config } from '../connection/connection.js'
