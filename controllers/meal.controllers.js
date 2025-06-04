@@ -1,14 +1,19 @@
-import { Query } from 'node-appwrite'
+import { ID, Query } from 'node-appwrite'
 import { databases,config } from '../connection/connection.js'
+import { spoonacularRequest } from '../utils/spponacular.utils.js'
+import { clarifaiImageHelperModel } from '../utils/clarifai.utils.js'
 
 // fetch latest meal 
-export async function fetchLatestMeal(_req,res) {
+export async function fetchLatestMeal(req,res) {
     try {
+
+        const { userid } = await req.body
 
         const result = await databases.listDocuments(
             config.databaseid,
             config.meal_logs_collectionID,
             [
+                Query.equal('userid',userid),
                 Query.orderAsc($createdAt),
                 Query.list(1)
             ]
@@ -64,15 +69,21 @@ export async function fetchSingleMealDetail(req,res) {
     }
 }
 
+// fetch all meals 
 export async function fetchMealsLogs(req,res) {
     try {
 
-        const { limit } = await res.body
+        const { limit,userid } = await res.body
 
         console.log('Limit to fetch meal logs',limit)
 
         const buildQuery = [Query.orderDesc('$createdAt')];
         if(limit) buildQuery.push(Query.limit(limit));
+        if(!userid){
+            return res.status(400).json({'message':'userid is required'})
+        }
+
+        buildQuery.push(Query.equal('userid',userid))
 
         const result = await databases.listDocuments(
             config.databaseid,
@@ -94,6 +105,66 @@ export async function fetchMealsLogs(req,res) {
     } catch (error) {
          return res.status(500).json({
             'message' : 'Issue Occured while fetching data....',
+            'error' : error
+        })
+    }
+}
+
+// upload meal 
+export async function uploadMeal(req,res) {
+    try {
+
+        const { foodImage,userid } = await req.body
+
+        if(!foodImage && !userid){
+            return res.status(400).json({
+                'message':'Invalid Credentials'
+            })
+        }
+
+        const foodName = await clarifaiImageHelperModel(foodImage)
+
+        if(!foodName){
+            return req.status(400).json(
+                {'message': 'food name not found'}
+            )
+        }
+
+        console.log('foodName given by clarifai',foodName)
+
+        const data = await spoonacularRequest(foodName);
+
+        if(!data){
+            return res.status(400).json({'message':'Data not avialable.'})
+        }
+
+        const addData = await databases.createDocument(
+            config.databaseid,
+            config.meal_logs_collectionID,
+            ID.unique(),
+            {
+                userid : userid,
+                foodname : foodName,
+                foodImageUrl : foodImage,
+                calories : data?.calories?.value,
+                protein :data?.protein?.value,
+                carbs :data?.value?.value,
+                fat : data?.fat?.value
+            }
+        )
+
+        if(!addData) {
+            return res.status(400).json({'message':'Failed to add Data'})
+        }
+
+        return res.status(201).json({
+            'message' : 'Data added Successfully...',
+            data: data
+        })
+        
+    } catch (error) {
+        return res.status(500).json({
+            'message' : 'Issue Occured while Adding data....',
             'error' : error
         })
     }

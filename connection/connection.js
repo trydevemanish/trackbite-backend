@@ -1,6 +1,9 @@
-import sdk,{ Databases } from "node-appwrite"
+import { Databases,Client } from "node-appwrite"
+import dotenv from 'dotenv';
 
-export const client = new sdk.Client();
+dotenv.config()
+
+export const client = new Client();
 
 export const config = {
     platform : 'com.jsm.trackbite',
@@ -13,7 +16,7 @@ export const config = {
 
 client
     .setEndpoint(config.endpoint)
-    .setPlatform(config.platform)
+    // .setPlatform(config.platform)
     .setProject(config.projectId)
     .setKey(config.secertApiKey);
 
