@@ -8,26 +8,25 @@ const clarifaiapp = new Clarifai.App({
 })
 
 export async function clarifaiImageHelperModel(foodImage) {
-    // this foodImage should be of base 64 image 
-
     try {
-    
-        clarifaiapp.models
-            .predict(process.env.CLARIFAI_MODEL_AI, { base64: foodImage })
-            .then(response => {
-                    const foodName = response.outputs[0].data.concepts[0].name;
-                    console.log("Recognized food:", foodName);
-    
-                    if(!foodName){
-                        return res.status(400).json({'message':'Issue Occured while finding foodname...'})
-                    }
-    
-                    return foodName;
-    
-                })
-            .catch(err => {
-                console.error("Clarifai error:", err);
-            });
+
+        console.log('clarifai modeleid',process.env.CLARIFAI_MODEL_AI)
+
+        const response  = await clarifaiapp.models.predict(process.env.CLARIFAI_MODEL_AI, { base64: foodImage })
+
+        if(!response){
+            throw new Error('Didnot get the response');
+        }
+
+        const foodName = response.outputs[0].data.concepts?.[0]?.name;
+
+        if(!foodName){
+            throw new Error('Could not recognize food from image');
+        }
+
+        console.log('Recognisied food Name',foodName)
+
+        return foodName;
 
     } catch (error) {
         console.error('Issue Occured in clarifai function....',error)

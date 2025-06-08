@@ -2,6 +2,7 @@ import { ID, Query } from 'node-appwrite'
 import { databases,config } from '../connection/connection.js'
 import { spoonacularRequest } from '../utils/spponacular.utils.js'
 import { clarifaiImageHelperModel } from '../utils/clarifai.utils.js'
+import { getSimiliarSpoonacularResult } from '../utils/getsimiliarspoonacularreuslt.js'
 
 // fetch latest meal 
 export async function fetchLatestMeal(req,res) {
@@ -110,13 +111,13 @@ export async function fetchMealsLogs(req,res) {
     }
 }
 
-// upload meal 
+// this call is reponsible for food Image Detection from calrifai and giving similiar foodName
 export async function uploadMeal(req,res) {
     try {
 
-        const { foodImage,userid } = await req.body
+        const { foodImage } = await req.body
 
-        if(!foodImage && !userid){
+        if(!foodImage){
             return res.status(400).json({
                 'message':'Invalid Credentials'
             })
@@ -132,12 +133,56 @@ export async function uploadMeal(req,res) {
 
         console.log('foodName given by clarifai',foodName)
 
-        const data = await spoonacularRequest(foodName);
+        const foodOptions = await getSimiliarSpoonacularResult(foodName)
 
+        return res.status(200).json({
+            'message' : 'Fetched foodOptions from image',
+            'data' : foodOptions
+        })
+
+    } catch (error) {
+        return res.status(500).json({
+            'message' : 'Issue Occured while Adding data....',
+            'error' : error
+        })
+    }
+}
+
+// this call will get the basic foodDetail from the spooncular api
+export async function getFoodItemDetails(req,res){
+    try {
+        const { foodName } = await req.body
+    
+        if(!foodName){
+            return res.status(400).json({'message':'Food Name is required'})
+        }
+    
+        const data = await spoonacularRequest(foodName);
+    
         if(!data){
             return res.status(400).json({'message':'Data not avialable.'})
         }
+    
+        console.log('data from spoonacular',data)
+    } catch (error) {
+        console.error("Issue Occured in spooncular api: ",error)
+        return res.status(500).json({
+            'message':'Issue Occured in spooncular api ',
+            'error':error
+        })
+    }
 
+}
+
+// this call will add the data to the database
+export async function uploadThisInDatabase(){
+    try {
+        const { data } = await req.body
+    
+        if(!data){
+            return res.status(400).json({'message':'Food Detail data is required'})
+        }
+    
         const addData = await databases.createDocument(
             config.databaseid,
             config.meal_logs_collectionID,
@@ -152,20 +197,24 @@ export async function uploadMeal(req,res) {
                 fat : data?.fat?.value
             }
         )
-
+    
         if(!addData) {
             return res.status(400).json({'message':'Failed to add Data'})
         }
-
+    
         return res.status(201).json({
             'message' : 'Data added Successfully...',
             data: data
         })
-        
     } catch (error) {
+        console.error("Issue Occured in Adding to DB: ",error)
         return res.status(500).json({
-            'message' : 'Issue Occured while Adding data....',
-            'error' : error
+            'message':'Issue Occured in Adding to DB: ',
+            'error':error
         })
     }
+}
+
+export async function fetchMoreDatawithApi(params) {
+    // this will fetch for data with api like how t oburn this calrie and more,
 }
