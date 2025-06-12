@@ -3,9 +3,9 @@ import { fetchLatestMeal,fetchMealsLogs,fetchSingleMealDetail,uploadMeal,getFood
 const mealrouter = Router() 
 
 //to locate all the meals 
-mealrouter.route('/').get(fetchMealsLogs)
+mealrouter.route('/').post(fetchMealsLogs)
 //to locate latest meal 
-mealrouter.route('/latest').get(fetchLatestMeal)
+mealrouter.route('/latest').post(fetchLatestMeal)
 //to fetch single meal detail
 mealrouter.route('/:id').get(fetchSingleMealDetail)
 //to upload the meal to clarifai

@@ -16,7 +16,6 @@ export const config = {
 
 client
     .setEndpoint(config.endpoint)
-    // .setPlatform(config.platform)
     .setProject(config.projectId)
     .setKey(config.secertApiKey);
 

@@ -15,8 +15,8 @@ export async function fetchLatestMeal(req,res) {
             config.meal_logs_collectionID,
             [
                 Query.equal('userid',userid),
-                Query.orderAsc($createdAt),
-                Query.list(1)
+                Query.orderAsc('$createdAt'),
+                Query.limit(1)
             ]
         )
 
@@ -45,8 +45,7 @@ export async function fetchLatestMeal(req,res) {
 export async function fetchSingleMealDetail(req,res) {
     try { 
 
-        const url = new URL(req.url)
-        const id = url.pathname.split(" ")[3]
+        const id = req?.params?.id;
 
         if(!id){
             return res.status(400).json({ 'message':'Meal Log id is required' })
@@ -61,6 +60,8 @@ export async function fetchSingleMealDetail(req,res) {
         if(!result){
             return res.status(400).json({'message':'No meal with this id.'})
         }
+
+        return res.status(200).json({'message':'Fetched meal data','data':result})
         
     } catch (error) {
         return res.status(500).json({
@@ -74,12 +75,11 @@ export async function fetchSingleMealDetail(req,res) {
 export async function fetchMealsLogs(req,res) {
     try {
 
-        const { limit,userid } = await res.body
-
-        console.log('Limit to fetch meal logs',limit)
+        const { limit,userid } = await req.body
 
         const buildQuery = [Query.orderDesc('$createdAt')];
         if(limit) buildQuery.push(Query.limit(limit));
+
         if(!userid){
             return res.status(400).json({'message':'userid is required'})
         }
@@ -152,6 +152,8 @@ export async function uploadMeal(req,res) {
 export async function getFoodItemDetails(req,res){
     try {
         const { foodName } = await req.body
+
+        console.log('foodName passed by frontend',foodName)
     
         if(!foodName){
             return res.status(400).json({'message':'Food Name is required'})
@@ -163,7 +165,11 @@ export async function getFoodItemDetails(req,res){
             return res.status(400).json({'message':'Data not avialable.'})
         }
     
-        console.log('data from spoonacular',data)
+        return res.status(200).json({
+            'message': 'Fetched data from the api..',
+            'data' : data
+        })
+
     } catch (error) {
         console.error("Issue Occured in spooncular api: ",error)
         return res.status(500).json({
@@ -175,26 +181,30 @@ export async function getFoodItemDetails(req,res){
 }
 
 // this call will add the data to the database
-export async function uploadThisInDatabase(){
+export async function uploadThisInDatabase(req,res){
     try {
         const { data } = await req.body
-    
+
         if(!data){
             return res.status(400).json({'message':'Food Detail data is required'})
         }
-    
+
+        console.log(data)
+
         const addData = await databases.createDocument(
             config.databaseid,
             config.meal_logs_collectionID,
             ID.unique(),
             {
-                userid : userid,
-                foodname : foodName,
-                foodImageUrl : foodImage,
-                calories : data?.calories?.value,
-                protein :data?.protein?.value,
-                carbs :data?.value?.value,
-                fat : data?.fat?.value
+                userid : data?.userid,
+                foodname : data?.foodname,
+                foodImageUrl : data?.foodImageUrl,
+                calories : data?.calories,
+                protein :data?.protein,
+                carbs :data?.carbs,
+                fat : data?.fat,
+                mealType:data?.mealType,
+                quantity:data?.quantity
             }
         )
     
@@ -202,6 +212,8 @@ export async function uploadThisInDatabase(){
             return res.status(400).json({'message':'Failed to add Data'})
         }
     
+        console.log('added to db')
+
         return res.status(201).json({
             'message' : 'Data added Successfully...',
             data: data
