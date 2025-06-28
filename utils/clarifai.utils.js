@@ -1,36 +1,65 @@
-import Clarifai from 'clarifai'
+import { grpc,ClarifaiStub } from 'clarifai-nodejs-grpc'
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-const clarifaiapp = new Clarifai.App({
-    apiKey : process.env.CLARIFAI_API_KEY
-})
+const stub = ClarifaiStub.grpc();
+
+const metadata = new grpc.Metadata();
+metadata.set("authorization", `Key ${process.env.CLARIFAI_PAT}`);
 
 export async function clarifaiImageHelperModel(foodImage) {
     try {
 
-        console.log('clarifai modeleid',process.env.CLARIFAI_MODEL_AI)
+        const response = await new Promise((resolve, reject) => {
+            stub.PostModelOutputs(
+                {
+                    user_app_id: {
+                        "user_id": `${process.env.CLARIFAI_USER_ID}`,
+                        "app_id": `${process.env.CLARIFAI_APP_ID}`
+                    },
+                    model_id: `${process.env.CLARIFAI_MODEL_AI}`,
+                    inputs: [
+                        {
+                            data: {
+                                image: {
+                                base64: foodImage.replace(/^data:image\/\w+;base64,/, ""), // strip data URL prefix
+                                },
+                            },
+                        },
+                    ],
+                },
+                metadata,
+                (err, response) => {
 
-        const response  = await clarifaiapp.models.predict(process.env.CLARIFAI_MODEL_AI, { base64: foodImage })
+                    if (err) {
+                        console.error("Clarifai API Error:", err);
+                        reject(err);
+                    }
 
-        if(!response){
-            throw new Error('Didnot get the response');
-        }
+                    if (response.status.code !== 10000) {
+                        console.error("Clarifai request failed:", response.status);
+                        reject(new Error(`Clarifai request failed: ${response.status.description}`));
+                    }
 
-        const foodName = response.outputs[0].data.concepts?.[0]?.name;
+                    const concepts = response.outputs[0].data.concepts;
+                    
+                    if (!concepts || concepts.length === 0) {
+                        reject(new Error("No concepts returned"));
+                    }
 
-        if(!foodName){
-            throw new Error('Could not recognize food from image');
-        }
+                    const foodName = concepts[0].name;
 
-        console.log('Recognisied food Name',foodName)
+                    resolve(foodName);
+                }
+            )
+        })
 
-        return foodName;
-
+        console.log("Recognized food name:", response);
+        return response;
+ 
     } catch (error) {
         console.error('Issue Occured in clarifai function....',error)
         return error;
     }
 }
-

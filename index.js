@@ -30,3 +30,6 @@ app.use('/meal',mealrouter)
 
 
 app.listen(PORT,() => console.log(`Server Started at port: ${PORT}`))
+
+
+// 2 - backend api url path error 

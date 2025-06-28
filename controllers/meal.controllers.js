@@ -3,6 +3,14 @@ import { databases,config } from '../connection/connection.js'
 import { spoonacularRequest } from '../utils/spponacular.utils.js'
 import { clarifaiImageHelperModel } from '../utils/clarifai.utils.js'
 import { getSimiliarSpoonacularResult } from '../utils/getsimiliarspoonacularreuslt.js'
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+async function getTodayDate(){
+    const date = new Date()
+    return date.toISOString().split('T')[0]
+}
 
 // fetch latest meal 
 export async function fetchLatestMeal(req,res) {
@@ -15,7 +23,7 @@ export async function fetchLatestMeal(req,res) {
             config.meal_logs_collectionID,
             [
                 Query.equal('userid',userid),
-                Query.orderAsc('$createdAt'),
+                Query.orderDesc('$createdAt'),
                 Query.limit(1)
             ]
         )
@@ -85,6 +93,7 @@ export async function fetchMealsLogs(req,res) {
         }
 
         buildQuery.push(Query.equal('userid',userid))
+        buildQuery.push(Query.equal('timestamp',await getTodayDate()))
 
         const result = await databases.listDocuments(
             config.databaseid,
@@ -100,6 +109,46 @@ export async function fetchMealsLogs(req,res) {
 
         return res.status(200).json({
             'message':'Fetch Meals Logs',
+            'data' : result.documents
+        })
+        
+    } catch (error) {
+         return res.status(500).json({
+            'message' : 'Issue Occured while fetching data....',
+            'error' : error
+        })
+    }
+}
+
+export async function fetchMealLogsOfCertainDate(req,res){
+    try {
+
+        const { date,limit,userid } = await req.body
+
+        const buildQuery = [Query.orderDesc('$createdAt')];
+        if(limit) buildQuery.push(Query.limit(limit));
+
+        if(!userid){
+            return res.status(400).json({'message':'userid is required'})
+        }
+
+        buildQuery.push(Query.equal('userid',userid))
+        buildQuery.push(Query.equal('timestamp',date))
+
+        const result = await databases.listDocuments(
+            config.databaseid,
+            config.meal_logs_collectionID,
+            buildQuery
+        )
+
+        if(!result){
+            return res.status(400).json(
+                {'message':'Meals are not avialable'}
+            )
+        }
+
+        return res.status(200).json({
+            'message':'Fetch Meals Logs at a certain date ',
             'data' : result.documents
         })
         
@@ -131,8 +180,6 @@ export async function uploadMeal(req,res) {
             )
         }
 
-        console.log('foodName given by clarifai',foodName)
-
         const foodOptions = await getSimiliarSpoonacularResult(foodName)
 
         return res.status(200).json({
@@ -153,8 +200,6 @@ export async function getFoodItemDetails(req,res){
     try {
         const { foodName } = await req.body
 
-        console.log('foodName passed by frontend',foodName)
-    
         if(!foodName){
             return res.status(400).json({'message':'Food Name is required'})
         }
@@ -164,7 +209,7 @@ export async function getFoodItemDetails(req,res){
         if(!data){
             return res.status(400).json({'message':'Data not avialable.'})
         }
-    
+
         return res.status(200).json({
             'message': 'Fetched data from the api..',
             'data' : data
@@ -189,7 +234,7 @@ export async function uploadThisInDatabase(req,res){
             return res.status(400).json({'message':'Food Detail data is required'})
         }
 
-        console.log(data)
+        const timstampdate = `${await getTodayDate()}`;
 
         const addData = await databases.createDocument(
             config.databaseid,
@@ -204,7 +249,8 @@ export async function uploadThisInDatabase(req,res){
                 carbs :data?.carbs,
                 fat : data?.fat,
                 mealType:data?.mealType,
-                quantity:data?.quantity
+                quantity:data?.quantity,
+                timestamp: timstampdate
             }
         )
     
@@ -227,6 +273,7 @@ export async function uploadThisInDatabase(req,res){
     }
 }
 
-export async function fetchMoreDatawithApi(params) {
+export async function fetchMoreDatawithAi(req,res) {
     // this will fetch for data with api like how t oburn this calrie and more,
+
 }
