@@ -272,8 +272,3 @@ export async function uploadThisInDatabase(req,res){
         })
     }
 }
-
-export async function fetchMoreDatawithAi(req,res) {
-    // this will fetch for data with api like how t oburn this calrie and more,
-
-}

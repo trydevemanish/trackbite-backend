@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { fetchLatestMeal,fetchMealsLogs,fetchSingleMealDetail,uploadMeal,getFoodItemDetails,uploadThisInDatabase,fetchMoreDatawithAi,fetchMealLogsOfCertainDate } from '../controllers/meal.controllers.js'
+import { fetchLatestMeal,fetchMealsLogs,fetchSingleMealDetail,uploadMeal,getFoodItemDetails,uploadThisInDatabase,fetchMealLogsOfCertainDate } from '../controllers/meal.controllers.js'
 const mealrouter = Router() 
 
 //to locate all the meals 
@@ -16,7 +16,5 @@ mealrouter.route('/upload').post(uploadMeal)
 mealrouter.route('/fooddetail').post(getFoodItemDetails)
 //to add to the database 
 mealrouter.route('/add').post(uploadThisInDatabase)
-// to get some extra data with the ai model 
-mealrouter.route('/ask').post(fetchMoreDatawithAi)
 
 export { mealrouter }

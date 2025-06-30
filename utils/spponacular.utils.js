@@ -20,10 +20,3 @@ export async function spoonacularRequest(foodName) {
         throw new Error('Issue Ocuured in spooncaluar api...',error)
     }
 }
-
-
-// export async function fatSecretAccessToken() {
-//     const accesstoken = await fetch(`https://oauth.fatsecret.com/connect/token`)
-
-
-// }
